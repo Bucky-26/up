@@ -1,0 +1,136 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Monitor</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+
+<div class="container mt-5">
+  <h2>Website Monitor</h2>
+
+  <button class="btn btn-primary" data-toggle="modal" data-target="#addWebsiteModal">
+    Add Website
+  </button>
+
+  <table class="table mt-3">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Last Check</th>
+      </tr>
+    </thead>
+    <tbody id="websitesTableBody"></tbody>
+  </table>
+</div>
+
+<!-- Add Website Modal -->
+<div class="modal" id="addWebsiteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h4 class="modal-title">Add Website</h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <form id="addWebsiteForm">
+          <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" class="form-control" id="name" required>
+          </div>
+          <div class="form-group">
+            <label for="url">URL:</label>
+            <input type="url" class="form-control" id="url" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" id="email" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Website</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  let socket = new WebSocket('ws://localhost:3000');
+
+  // Event listener for WebSocket open
+  socket.addEventListener('open', () => {
+    console.log('WebSocket connection opened.');
+
+    // Start the heartbeat check every second
+    setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'heartbeat' }));
+      }
+    }, 1000);
+  });
+
+  // Event listener for WebSocket message
+  socket.addEventListener('message', (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'websites') {
+      updateWebsitesTable(data.data);
+    } else if (data.type === 'heartbeat') {
+      updateHeartbeat(data.data);
+    }
+  });
+
+  document.getElementById('addWebsiteForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const url = document.getElementById('url').value;
+    const email = document.getElementById('email').value;
+
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'addWebsite', payload: { name, url, email } }));
+    } else {
+      console.error('WebSocket connection is not open.');
+    }
+
+    // Clear form fields
+    document.getElementById('name').value = '';
+    document.getElementById('url').value = '';
+    document.getElementById('email').value = '';
+    $('#addWebsiteModal').modal('hide');
+  });
+
+  function updateWebsitesTable(websites) {
+    const tableBody = document.getElementById('websitesTableBody');
+    tableBody.innerHTML = '';
+
+    websites.forEach((website) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${website.name}</td>
+        <td>${website.status}</td>
+        <td>${website.lastCheck}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  function updateHeartbeat(data) {
+    console.log('Heartbeat received:', data);
+    // Update the UI or perform additional actions based on the heartbeat data
+  }
+</script>
+
+</body>
+</html>
+    
