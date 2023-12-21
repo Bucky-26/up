@@ -122,7 +122,7 @@ const sendEmail = async (receiverEmail, subject, emailText) => {
 // Serve static files (e.g., HTML, CSS)
 app.use(express.static('public'));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 2222;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
